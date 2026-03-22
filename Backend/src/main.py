@@ -5,7 +5,6 @@ import os
 from pydantic import BaseModel
 from tapo import ApiClient
 from fastapi import FastAPI
-import uvicorn
 import json
 
 
@@ -69,7 +68,3 @@ async def handle_device_report(device: DeviceReport):
 
     device_list[device.device_id].update(updated_device_data)
     save_config(device_list)
-
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=int(os.getenv("SERVER_PORT")), reload=True)
