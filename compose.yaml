@@ -1,6 +1,6 @@
 services:
   phone-farm:
-    build: ./Backend
+    build: ./backend
     volumes:
       - ./config:/app/config  # Maps Root/config to Container/app/config
     env_file:

@@ -1,6 +1,6 @@
-# Phone Farm Dashboard
+# Phone Fleet Dashboard
 
-A comprehensive phone farm monitoring and management system consisting of a Python backend API, mobile data collection app, and a dashboard for real-time device monitoring and analytics.
+A comprehensive phone fleet monitoring and management system consisting of a Python backend API, mobile data collection app, and a dashboard for real-time device monitoring and analytics.
 
 ##  ---  Project Overview  ---
 
@@ -48,8 +48,8 @@ This project is a three-tier system designed to monitor, manage, and analyse dat
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/ndrewta/Phone-Farm-Dashboard.git
-   cd Phone-Farm-Dashboard
+   git clone https://github.com/ndrewta/Phone-Fleet-Dashboard.git
+   cd Phone-Fleet-Dashboard
    ```
 
 2. **Set up virtual environment**
@@ -65,7 +65,7 @@ This project is a three-tier system designed to monitor, manage, and analyse dat
 
 3. **Install dependencies**
    ```bash
-   cd Backend
+   cd backend
    pip install -r requirements.txt
    ```
 
