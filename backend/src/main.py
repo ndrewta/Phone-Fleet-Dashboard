@@ -13,16 +13,16 @@ import uvicorn
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 docker_mode = False
 
-# 1. Define the Paths
-# Docker Path (Sibling to src)
+# Define the paths
+# Docker path (Sibling to src)
 env_docker = os.path.join(BASE_DIR, "..", ".env")
 config_docker = os.path.join(BASE_DIR, "..", "config", "devices.json")
 
-# Local Path (Root folder - two steps back)
+# Local path (Root folder - two steps back)
 env_root = os.path.join(BASE_DIR, "..", "..", ".env")
 config_root = os.path.join(BASE_DIR, "..", "..", "config", "devices.json")
 
-# 2. The Logic: Find the Config first, then load the matching .env
+# Find the config first, then load the matching .env
 if os.path.exists(config_docker):
     load_dotenv(env_docker)
     CONFIG_PATH = config_docker
@@ -35,13 +35,17 @@ else:
 
 
 class DeviceReport(BaseModel):
+    # Define the fields expected in the device report
     device_id: str
     nickname: str
+    device_model: str
     sim_1: str
     sim_2: Optional[str] = ""
     battery_level: float
     is_charging: bool
     plug_slot: int
+    ip_address: str
+    last_updated: Optional[str] = None
 
 
 def load_config():
@@ -57,6 +61,7 @@ def save_config(config):
 
 
 @asynccontextmanager
+# This function will run on startup and shutdown of the FastAPI app, allowing us to initialize the Tapo client and power board connection
 async def lifespan(app: FastAPI):
     print("Starting up...")
 
@@ -70,6 +75,7 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/update")
+# This endpoint receives device reports and updates the configuration accordingly
 async def handle_device_report(device: DeviceReport):
 
     device_list = load_config()
@@ -96,4 +102,5 @@ async def handle_device_report(device: DeviceReport):
 
 
 if __name__ == "__main__" and not docker_mode:
+    # Only run the server if not in Docker mode, since in Docker we will use the command specified in the Dockerfile
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

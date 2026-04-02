@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -41,20 +42,35 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import com.example.phonefleetapp.services.BatteryMonitorService
 import com.example.phonefleetapp.ui.theme.PhoneFleetAppTheme
+import java.net.Inet4Address
+import java.net.NetworkInterface
+import java.util.Collections
+import java.util.UUID
 
 
 class MainActivity : ComponentActivity() {
 
     lateinit var sharedPrefs: SharedPreferences
-    val deviceId = "${Build.MANUFACTURER} ${Build.MODEL}"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         sharedPrefs = getSharedPreferences("DevicePrefs", MODE_PRIVATE)
-        sharedPrefs.edit { putString("device_id", deviceId) }
+
+        if (sharedPrefs.getString("device_id", "") == "") {
+            // Generate UUID if it doesn't exist
+            val uniqueID = UUID.randomUUID().toString()
+            sharedPrefs.edit { putString("device_id", uniqueID) }
+        }
+
+        if (sharedPrefs.getString("ip_address", "") == "") {
+            // Generate IP address if it doesn't exist
+            val ipAddress = getLocalIpAddress()
+            sharedPrefs.edit { putString("ip_address", ipAddress) }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Check for POST_NOTIFICATIONS permission
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
@@ -88,11 +104,34 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun getLocalIpAddress(): String {
+    try {
+        // Get all network interfaces
+        val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+        for (intf in interfaces) {
+            val addresses = Collections.list(intf.inetAddresses)
+            for (addr in addresses) {
+                // Check if it's IPv4 and NOT the loopback (127.0.0.1)
+                if (!addr.isLoopbackAddress && addr is Inet4Address) {
+                    val sAddr = addr.hostAddress ?: continue // Skip if null safely
 
+                    // Check if it's a private IP address
+                    if (sAddr.startsWith("192.168.")) {
+                        return sAddr
+                    }
+                }
+            }
+        }
+    } catch (ex: Exception) {
+        // Log the error so you can see it in Android Studio Logcat
+        Log.e("MainActivity", "Error getting IP: ${ex.message}")
+    }
+    return "0.0.0.0"
+}
 @Composable
 fun AppLayout(modifier: Modifier, prefs: SharedPreferences) {
-
-    val deviceId = prefs.getString("device_id", "") ?: ""
+    // Device information
+    val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
     var nickname by rememberSaveable {
         mutableStateOf(
             prefs.getString("nickname", "") ?: ""
@@ -123,7 +162,7 @@ fun AppLayout(modifier: Modifier, prefs: SharedPreferences) {
         )
         {
             Text(
-                deviceId,
+                deviceModel,
                 fontSize = 20.sp
             )
             OutlinedTextField(
@@ -206,6 +245,5 @@ fun AppLayoutPreview() {
     val context = LocalContext.current
     // This creates a temporary, empty set of prefs just for the preview
     val fakePrefs = context.getSharedPreferences("preview_prefs", Context.MODE_PRIVATE)
-    // You just call your function here with sample data
     AppLayout(prefs = fakePrefs, modifier = Modifier)
 }

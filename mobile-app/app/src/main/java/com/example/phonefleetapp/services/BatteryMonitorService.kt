@@ -39,6 +39,8 @@ class BatteryMonitorService : Service() {
     private var batteryPercentage: Float = -1f
 
     private val batteryReceiver = object : BroadcastReceiver() {
+
+        // Called when the BroadcastReceiver receives an Intent broadcast.
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
                 val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
@@ -49,7 +51,7 @@ class BatteryMonitorService : Service() {
                 sharedPrefs.edit {
                     putBoolean("is_charging", isCharging)
                 }
-
+                // Check if charging state has changed
                 if (previousChargingState == null) {
                     previousChargingState = isCharging
                 } else if (previousChargingState != isCharging) {
@@ -57,14 +59,14 @@ class BatteryMonitorService : Service() {
                     sendToBackend(json)
                     previousChargingState = isCharging
                 }
-
+                // Calculate battery percentage
                 if (level != -1 && scale != -1 && scale != 0) {
                     batteryPercentage = (level.toFloat() / scale.toFloat()) * 100f
                     sharedPrefs.edit {
                         putFloat("battery_level", batteryPercentage)
                     }
                 }
-
+                // Check if battery level is low or high
                 if (batteryPercentage <= 20 || batteryPercentage >= 80) {
                     val json = prepareJsonPayLoad()
                     sendToBackend(json)
@@ -88,6 +90,7 @@ class BatteryMonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
         val notification = createNotification()
 
         // Check for Android 14 (API 34 / Upside Down Cake)
@@ -125,6 +128,7 @@ class BatteryMonitorService : Service() {
         val channelId = "battery_monitor_id"
         val channelName = "Battery Monitor Service"
 
+        // Create the NotificationChannel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel(channelId, channelName, importance).apply {
@@ -144,24 +148,28 @@ class BatteryMonitorService : Service() {
     }
 
     private fun prepareJsonPayLoad(): String {
+        // Prepare JSON payload
         val gson = Gson()
         val batteryLevel = sharedPrefs.getFloat("battery_level", -1f)
         val chargingStatus = sharedPrefs.getBoolean("is_charging", false)
 
         val data = DeviceData(
-            deviceId = "${Build.MANUFACTURER} ${Build.MODEL}",
+            deviceId = sharedPrefs.getString("device_id", "") ?: "",
             nickname = sharedPrefs.getString("nickname", "") ?: "",
+            deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}",
             sim1 = sharedPrefs.getString("sim_1", "") ?: "",
             sim2 = sharedPrefs.getString("sim_2", "") ?: "",
             batteryLevel = batteryLevel,
             isCharging = chargingStatus,
-            plugSlot = sharedPrefs.getInt("plug_slot", 1)
+            plugSlot = sharedPrefs.getInt("plug_slot", 1),
+            ipAddress = sharedPrefs.getString("ip_address", "") ?: ""
         )
 
         return gson.toJson(data)
     }
 
     private fun sendToBackend(json: String) {
+        // Send data to backend
         val client = OkHttpClient()
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val requestBody = json.toRequestBody(mediaType)
@@ -189,6 +197,8 @@ data class DeviceData(
     val deviceId: String,
     @SerializedName("nickname")
     val nickname: String,
+    @SerializedName("device_model")
+    val deviceModel: String,
     @SerializedName("sim_1")
     val sim1: String,
     @SerializedName("sim_2")
@@ -199,4 +209,6 @@ data class DeviceData(
     val isCharging: Boolean,
     @SerializedName("plug_slot")
     val plugSlot: Int,
+    @SerializedName("ip_address")
+    val ipAddress: String,
 )
