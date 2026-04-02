@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Optional
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
 from tapo import ApiClient
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 import json
 import uvicorn
 
@@ -35,7 +36,10 @@ else:
 
 class DeviceReport(BaseModel):
     device_id: str
-    battery_level: int
+    nickname: str
+    sim_1: str
+    sim_2: Optional[str] = ""
+    battery_level: float
     is_charging: bool
     plug_slot: int
 
@@ -65,7 +69,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.post("/update/")
+@app.post("/update")
 async def handle_device_report(device: DeviceReport):
 
     device_list = load_config()

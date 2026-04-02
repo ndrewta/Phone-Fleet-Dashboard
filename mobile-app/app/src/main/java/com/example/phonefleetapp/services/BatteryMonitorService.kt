@@ -19,6 +19,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.edit
 import com.example.phonefleetapp.BuildConfig
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -152,9 +153,9 @@ class BatteryMonitorService : Service() {
             nickname = sharedPrefs.getString("nickname", "") ?: "",
             sim1 = sharedPrefs.getString("sim_1", "") ?: "",
             sim2 = sharedPrefs.getString("sim_2", "") ?: "",
-            plugSlot = sharedPrefs.getInt("plug_slot", 1),
+            batteryLevel = batteryLevel,
             isCharging = chargingStatus,
-            batteryLevel = batteryLevel
+            plugSlot = sharedPrefs.getInt("plug_slot", 1)
         )
 
         return gson.toJson(data)
@@ -166,7 +167,7 @@ class BatteryMonitorService : Service() {
         val requestBody = json.toRequestBody(mediaType)
 
         val request = Request.Builder()
-            .url(BuildConfig.BACKEND_URL + "/update/") // Backend server ip
+            .url(BuildConfig.BACKEND_URL) // Backend server ip
             .post(requestBody)
             .build()
 
@@ -182,12 +183,20 @@ class BatteryMonitorService : Service() {
     }
 }
 
+
 data class DeviceData(
+    @SerializedName("device_id")
     val deviceId: String,
+    @SerializedName("nickname")
     val nickname: String,
+    @SerializedName("sim_1")
     val sim1: String,
+    @SerializedName("sim_2")
     val sim2: String,
-    val plugSlot: Int,
+    @SerializedName("battery_level")
+    val batteryLevel: Float,
+    @SerializedName("is_charging")
     val isCharging: Boolean,
-    val batteryLevel: Float
+    @SerializedName("plug_slot")
+    val plugSlot: Int,
 )
